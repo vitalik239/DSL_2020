@@ -11,6 +11,8 @@ class LexemType(Enum):
 	FIGURE_BRACKET_CLOSE = 63
 	TRIANGLE_BRACKET_OPEN = 64
 	TRIANGLE_BRACKET_CLOSE = 65
+	SQUARE_BRACKET_OPEN = 66
+	SQUARE_BRACKET_CLOSE = 67
 
 	QUOTE = 8
 
@@ -51,6 +53,8 @@ separators = {
 				')' : LexemType.ROUND_BRACKET_CLOSE, 
 				'{' : LexemType.FIGURE_BRACKET_OPEN,
 				'}' : LexemType.FIGURE_BRACKET_CLOSE,
+				'[' : LexemType.SQUARE_BRACKET_OPEN,
+				']' : LexemType.SQUARE_BRACKET_CLOSE,
 				';' : LexemType.SEMICOLON,
 				',' : LexemType.COMMA,
 				'#' : LexemType.SHARP,
@@ -108,9 +112,9 @@ def close_lexem():
 		if cur in lexem_dict:
 			tokens.append((cur, lexem_dict[cur]))	
 		elif cur.isdigit():
-			tokens.append(([cur, LexemType.NUMBER]))
+			tokens.append((cur, LexemType.NUMBER))
 		else:
-			tokens.append(([cur, LexemType.OTHER]))
+			tokens.append((cur, LexemType.OTHER))
 	cur = ''
 
 def lexer(line):
