@@ -3,8 +3,7 @@ from enum import Enum
 class LexemType(Enum):
 	COMMA = 0
 	SEMICOLON = 1
-	ASSIGN = 2
-	SHARP = 3
+	SHARP = 2
 
 	ROUND_BRACKET_OPEN = 60
 	ROUND_BRACKET_CLOSE = 61
@@ -22,6 +21,7 @@ class LexemType(Enum):
 	INT = 20
 	DOUBLE = 21
 	VOID = 22
+	CHAR = 23
 
 	PLUS = 31
 	MINUS = 32
@@ -31,6 +31,11 @@ class LexemType(Enum):
 	OR = 36
 	EQUAL = 37
 
+	ASSIGN = 70
+	ASSIGN_ADD = 71
+	ASSIGN_SUBS = 72
+	ASSIGN_MULT = 73
+
 	VARIABLE = 40
 	NUMBER = 41
 	FUNC_CALL = 42
@@ -39,7 +44,10 @@ class LexemType(Enum):
 
 	OTHER = 100
 
-separators = {'(' : LexemType.ROUND_BRACKET_OPEN, 
+symbols = ['+', '=', '-', '*', '&', '|', '<', '>']
+
+separators = {
+				'(' : LexemType.ROUND_BRACKET_OPEN, 
 				')' : LexemType.ROUND_BRACKET_CLOSE, 
 				'{' : LexemType.FIGURE_BRACKET_OPEN,
 				'}' : LexemType.FIGURE_BRACKET_CLOSE,
@@ -48,35 +56,83 @@ separators = {'(' : LexemType.ROUND_BRACKET_OPEN,
 				'#' : LexemType.SHARP,
 				'<' : LexemType.TRIANGLE_BRACKET_OPEN,
 				'>' : LexemType.TRIANGLE_BRACKET_CLOSE,
-				'\"' : LexemType.QUOTE}
+				'\"' : LexemType.QUOTE
+			 }
 
-keywords = {'for' : LexemType.FOR,
+keywords = {
+			'for' : LexemType.FOR,
 			'while' : LexemType.WHILE,
 			'if' : LexemType.IF,
-			'include' : LexemType.INCLUDE}
+			'include' : LexemType.INCLUDE
+			}
+
+operators = {
+			'+' : LexemType.PLUS,
+			'==' : LexemType.EQUAL,
+			'-' : LexemType.MINUS,
+			'*' : LexemType.MULTIPLICATION,
+			'&&' : LexemType.AND,
+			'||' : LexemType.OR
+			}
+
+assign = {
+		'=' : LexemType.ASSIGN,
+		'+=' : LexemType.ASSIGN_ADD,
+		'-=' : LexemType.ASSIGN_SUBS,
+		'*=' : LexemType.ASSIGN_MULT
+		}
+
+types = {
+		'int' : LexemType.INT,
+		'char' : LexemType.CHAR,
+		'double' : LexemType.DOUBLE,
+		'void' : LexemType.VOID
+		}
+
+lexem_dict = dict(keywords)
+lexem_dict.update(types) 
+lexem_dict.update(assign) 
+lexem_dict.update(operators)
+lexem_dict.update(keywords)
+lexem_dict.update(separators)
+
+tokens = []
+cur = ''
+
+def is_variable(c):
+	return c.isdigit() or c.isalpha() or c == '_' 
+
+def close_lexem():
+	global cur
+	if len(cur) > 0:
+		if cur in lexem_dict:
+			tokens.append((cur, lexem_dict[cur]))	
+		elif cur.isdigit():
+			tokens.append(([cur, LexemType.NUMBER]))
+		else:
+			tokens.append(([cur, LexemType.OTHER]))
+	cur = ''
 
 def lexer(line):
-	tokens = []
+	global cur
+	global tokens
+
 	cur = ''
+	tokens = []
 	for c in line:
 		if c.isspace():
-			if len(cur) > 0:
-				tokens += tuple([cur, LexemType.VARIABLE])
-			cur = ''
-		elif c.isalpha() or c.isdigit() or c == '_':
+			close_lexem()
+		elif is_variable(c):
+			if len(cur) > 0 and not is_variable(cur[-1]):
+				close_lexem()
 			cur += c
-		elif c in separators:
-			if len(cur) > 0:
-				if cur in keywords:
-					tokens += tuple([cur, keywords[cur]])
-				elif cur.isdigit():
-					tokens += tuple([cur, LexemType.NUMBER])
-				else:
-					tokens += tuple([cur, LexemType.VARIABLE])
-			cur = ''
-			tokens += tuple([c, separators[c]])
+		elif c in symbols:
+			if len(cur) > 0 and not cur[-1] in symbols:
+				close_lexem()
+			cur += c
 		else:
-			tokens += tuple([c, LexemType.OTHER])
-			cur = ''
-
+			close_lexem()
+			cur += c
+	
+	close_lexem()
 	return tokens

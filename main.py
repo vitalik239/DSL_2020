@@ -7,7 +7,10 @@ def load_cpp(file_name):
 		for line in file:
 			tokens += lexer(line)
 			print(line)
-			print(lexer(line))
+			for t in lexer(line):
+				print(t)
+			print('_' * 20)
+
 	return tokens 
 
 
