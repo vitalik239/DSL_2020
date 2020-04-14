@@ -5,6 +5,8 @@ class LexemType(Enum):
 	SEMICOLON = 1
 	SHARP = 2
 
+	STRING_CONST = 4
+
 	ROUND_BRACKET_OPEN = 60
 	ROUND_BRACKET_CLOSE = 61
 	FIGURE_BRACKET_OPEN = 62
@@ -14,39 +16,35 @@ class LexemType(Enum):
 	SQUARE_BRACKET_OPEN = 66
 	SQUARE_BRACKET_CLOSE = 67
 
+	QUOTE_DOUBLE = 7
 	QUOTE = 8
 
 	FOR = 10
 	IF = 11
 	WHILE = 12
+	ELSE = 13
 	
-	INT = 20
-	DOUBLE = 21
-	VOID = 22
-	CHAR = 23
+	DATA_TYPE = 20
 
-	PLUS = 31
-	MINUS = 32
-	MULTIPLICATION = 33
-	DIVISION = 34
-	AND = 35
-	OR = 36
-	EQUAL = 37
+	BIN_OP = 30
 
 	ASSIGN = 70
-	ASSIGN_ADD = 71
-	ASSIGN_SUBS = 72
-	ASSIGN_MULT = 73
 
 	VARIABLE = 40
 	NUMBER = 41
 	FUNC_CALL = 42
 
 	INCLUDE = 50
+	RETURN = 51
 
 	OTHER = 100
 
 symbols = ['+', '=', '-', '*', '&', '|', '<', '>']
+
+quotes = {
+			'\"' : LexemType.QUOTE_DOUBLE,
+			'\'' : LexemType.QUOTE
+		 }
 
 separators = {
 				'(' : LexemType.ROUND_BRACKET_OPEN, 
@@ -60,37 +58,38 @@ separators = {
 				'#' : LexemType.SHARP,
 				'<' : LexemType.TRIANGLE_BRACKET_OPEN,
 				'>' : LexemType.TRIANGLE_BRACKET_CLOSE,
-				'\"' : LexemType.QUOTE
 			 }
 
 keywords = {
 			'for' : LexemType.FOR,
 			'while' : LexemType.WHILE,
 			'if' : LexemType.IF,
-			'include' : LexemType.INCLUDE
+			'else' : LexemType.ELSE,
+			'include' : LexemType.INCLUDE,
+			'return' : LexemType.RETURN
 			}
 
 operators = {
-			'+' : LexemType.PLUS,
-			'==' : LexemType.EQUAL,
-			'-' : LexemType.MINUS,
-			'*' : LexemType.MULTIPLICATION,
-			'&&' : LexemType.AND,
-			'||' : LexemType.OR
+			'+' : LexemType.BIN_OP,
+			'==' : LexemType.BIN_OP,
+			'-' : LexemType.BIN_OP,
+			'*' : LexemType.BIN_OP,
+			'&&' : LexemType.BIN_OP,
+			'||' : LexemType.BIN_OP
 			}
 
 assign = {
 		'=' : LexemType.ASSIGN,
-		'+=' : LexemType.ASSIGN_ADD,
-		'-=' : LexemType.ASSIGN_SUBS,
-		'*=' : LexemType.ASSIGN_MULT
+		'+=' : LexemType.ASSIGN,
+		'-=' : LexemType.ASSIGN,
+		'*=' : LexemType.ASSIGN
 		}
 
 types = {
-		'int' : LexemType.INT,
-		'char' : LexemType.CHAR,
-		'double' : LexemType.DOUBLE,
-		'void' : LexemType.VOID
+		'int' : LexemType.DATA_TYPE,
+		'char' : LexemType.DATA_TYPE,
+		'double' : LexemType.DATA_TYPE,
+		'void' : LexemType.DATA_TYPE
 		}
 
 lexem_dict = dict(keywords)
@@ -102,9 +101,11 @@ lexem_dict.update(separators)
 
 tokens = []
 cur = ''
+string_const_flag = False
+string_const_quote = None
 
 def is_variable(c):
-	return c.isdigit() or c.isalpha() or c == '_' 
+	return c.isdigit() or c.isalpha() or c == '_' or c == ':' 
 
 def close_lexem():
 	global cur
@@ -113,17 +114,28 @@ def close_lexem():
 			tokens.append((cur, lexem_dict[cur]))	
 		elif cur.isdigit():
 			tokens.append((cur, LexemType.NUMBER))
+		elif cur[0] in quotes and cur[-1] in quotes:
+			tokens.append((cur, LexemType.STRING_CONST))
 		else:
-			tokens.append((cur, LexemType.OTHER))
+			tokens.append((cur, LexemType.VARIABLE))
 	cur = ''
 
 def lexer(line):
 	global cur
 	global tokens
+	global string_const_flag
+	global string_const_quote
 
 	cur = ''
 	tokens = []
 	for c in line:
+		if string_const_flag:
+			cur += c
+			if c == string_const_quote:
+				close_lexem()
+				string_const_flag = False
+			continue
+
 		if c.isspace():
 			close_lexem()
 		elif is_variable(c):
@@ -133,6 +145,11 @@ def lexer(line):
 		elif c in symbols:
 			if len(cur) > 0 and not cur[-1] in symbols:
 				close_lexem()
+			cur += c
+		elif c in quotes:
+			close_lexem()
+			string_const_flag = True
+			string_const_quote = c
 			cur += c
 		else:
 			close_lexem()

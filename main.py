@@ -1,5 +1,6 @@
 from lexer import lexer
-import formatter
+from parser import parse
+from formatter import format
 
 def load_cpp(file_name):
 	tokens = []
@@ -16,6 +17,7 @@ def load_cpp(file_name):
 
 def __main__():
 	tokens = load_cpp("test/test1.cpp")
-
+	root = parse(tokens)
+	print(format(root)) 
 
 __main__()
